@@ -1,5 +1,6 @@
-Kruskal's algorithm
+Kruskal's algorithm...
 ==========
+... to find the minimum spanning tree of connected graphs.
 
 The files are
   * main.cpp: the main program that generates random graphs and tests the 
