@@ -19,10 +19,10 @@ class Graph{
         // Construct an empty graph with a max capacity for number of nodes
         Graph(unsigned);
         // Randomly initialize all the edges
-        void Randomize(long , long);
+        virtual void Randomize(long , long);
         // Add an edge to the graph, update the list of occupied nodes
-        void AddEdge(unsigned , unsigned , long);
-        void AddEdge(std::vector<long>&);
+        virtual void AddEdge(unsigned , unsigned , long);
+        virtual void AddEdge(std::vector<long>&);
         // Add a node the the graph
         void AddNode(unsigned);
         // Checkc if a node is in the graph

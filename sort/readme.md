@@ -15,7 +15,7 @@ am planning to have the following sorting agorithms implemented
 3. Quick sort
 4. Heap sort
 
-The [test file][test_sot] generates a list of random integers and sort the list
+The [test file][test_sort] generates a list of random integers and sort the list
 using different algorithms.
 
 [my_vector_utilities]: lib/my_vector_utilities.h
