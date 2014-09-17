@@ -16,7 +16,7 @@
 #include "vector"
 
 struct HeapElement{
-	long key;
+    long key;
 };
 
 class Heap{

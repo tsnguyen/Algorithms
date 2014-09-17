@@ -10,7 +10,7 @@ void Heap::BubbleUp(unsigned index){
     unsigned child = index, parent = child/2;
     while(parent > 0){
         if(mHeapData[child].key < mHeapData[parent].key){
-			SwapVectorElements(mHeapData, child, parent);
+            SwapVectorElements(mHeapData, child, parent);
             child = parent;
             parent = child / 2;
         }
@@ -35,7 +35,7 @@ void Heap::BubbleDown(unsigned index){
     }
 
     if (child < size - 1){
-		SwapVectorElements(mHeapData, child, size - 1);
+        SwapVectorElements(mHeapData, child, size - 1);
         BubbleUp(child);
     }
     mHeapData.resize(size - 1);
