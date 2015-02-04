@@ -1,6 +1,8 @@
 # compiling files
 *.obj
 *.exe
+*.aux
+*.log
 
 # temporary data files
 *.csv

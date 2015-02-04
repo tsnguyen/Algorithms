@@ -1,0 +1,126 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+Important points:
+\begin{itemize}
+\item One time pad has perfect secrecy
+\item Any cipher that has perfect secrecy must have key space at least as large
+as the message space
+\item For stream cipher to be secure, the PRG must be unpredictable.
+\end{itemize}
+\section{One time pad}
+
+\emph{Definition:} a cipher defined over $(\mathcal{K, M, C})$ is a pair of 
+efficient algorithms $(E,D)$ where
+\begin{eqnarray}
+E:&& \mathcal{K} \times \mathcal{M} \to \mathcal{C} \\
+D:&& \mathcal{K} \times \mathcal{C} \to \mathcal{M}
+\end{eqnarray}
+such that $ \forall m \in \mathcal{M}, k \in \mathcal{K}$
+\begin{eqnarray}
+D(k, E(k, m)) &=& m
+\end{eqnarray}
+
+For the one time pad (OTP), the cipher text is simply
+\begin{eqnarray}
+c &=& m \oplus k
+\end{eqnarray}
+Because of the property of the XOR operator, decrypting the OTP is 
+\begin{eqnarray}
+m &=& c \oplus k
+\end{eqnarray}
+The one time pad is the first example of a ``secure'' cipher: the key is 
+a random bit string as long as the message
+\begin{eqnarray}
+\mathcal{M} = \mathcal{C} = \mathcal{K} = \lbrace 0,1 \rbrace^n
+\end{eqnarray}
+
+We can see that the OTP is very fast to encrypt and decrypt, but the key is as
+long as the message. Is the OTP secure? But what is a secure cipher anyway?
+For now, we will assume that the attacker can only attack on the cipher text.
+Later on in the course, we will consider other possibilities. Shannon's idea:
+``cipher text should reveal no information about plain text''.
+
+\emph{Definition:} A cipher $(E, D)$ over $(\mathcal{K, M, C}$ has perfect 
+secrecy if $\forall m_0, m_1 \in \mathcal{M}$ (where len($m_1$) = len($m_0$)) 
+and $\forall c \in \mathcal{C}$
+\begin{eqnarray}
+\text{Pr}[ E(k, m_0) = c ] &=& \text{Pr} [E(k, m_1) = c]
+\end{eqnarray}
+where $k$ is uniform in $\mathcal{K}$ (we write $k \leftarrow^\text{R} 
+\mathcal{K}$)
+
+If a cipher satisfies the above definition, given a CT an attacker can't tell
+if the message is $m_1$ or $m_0$ (for all $m_1, m_0$). Therefore, even the most
+powerful adversary learns nothing about the PT from the CT. 
+
+We can show that OTP has perfect secrecy. However, we can also show that any 
+cipher that has perfect secrecy must satisfy  
+\begin{eqnarray}
+|\mathcal{K}| \ge |\mathcal{M}|
+\end{eqnarray}
+or the key has to be at least as long as the message. 
+
+\section{Pseudo-Random Generator}
+
+From the previous section, we have seen that OTP has perfect secrecy. However,
+OTP is not very practical because the key is as long as the message. If we have
+a mechanism to transfer the key securely, we can use that same mechanism to 
+transfer the message itself. Stream cipher is an approach to make OTP practical.
+The idea is to replace the ``random'' key by ``pseudorandom'' key. 
+
+\emph{Definition:} A PRG is a function $G: \lbrace 0,1 \rbrace^s \to \lbrace 0,
+1 \rbrace^n$ such that $n \gg s$, where $\lbrace 0,1 \rbrace^s$ is called the 
+seed space. 
+
+Using a PRG, we can expand the key to match the length of the message and then
+use OTP to encrypt the message. 
+
+Note that stream cipher cannot have perfect secrecy because the key is much 
+shorter than the message. So we will need a fifferent definition of security, 
+which depends on the PRG.
+
+For the stream cipher to be secure, the PRG must be unpredictable. 
+
+\emph{Definition:} We say that $G: \mathcal{K} \to \lbrace 0, 1 \rbrace^n$ is 
+predictable if exist an efficient algorithm and $0 \le i \le n-1$ such that
+\begin{eqnarray}
+\text{Pr}_{k \leftarrow^R \mathcal{K}} \left[ A(G(k))|_{1, \ldots, i} = G(k)|_{i+1}
+ \right]  &>&\frac{1}{2} + \epsilon
+\end{eqnarray}
+for non-negligible $\epsilon$ ($\epsilon > 1 / 2^{30}$)
+
+\emph{Definition:} a PRG is unpredictable if it is not predictable: for all $i$,
+there is no efficient adversary can predict bit $i+1$ for non-negligible 
+$\epsilon$. 
+
+\section{Negigible and non-negligible}
+
+In practice: $\epsilon$ is a scalar and 
+\begin{itemize}
+\item non-negligible if $\epsilon \ge 1 / 2^{30}$ (likely to happen over 1GB of
+data).
+\item negigible if $\epsilon \le 1 / 2^{80}$ (unlikely to happen over life of 
+key)
+\end{itemize}
+
+In theory: $\epsilon(\lambda)$ is a function from positive intergers to 
+positive reals
+\begin{itemize}
+\item non-negligible if $\exists d: \epsilon(\lambda) \ge 1 / \lambda^d$ 
+infinitely often ($\epsilon \ge $ 1/polynomial for many $\lambda$)
+\item negigible if $\forall d, \lambda \ge \lambda_d: \epsilon(\lambda) \le
+1/\lambda^d$
+\end{itemize}
+
+\emph{Definition:} We say that $G_\lambda: \mathcal{K}_\lambda \to \lbrace 0,1 
+\rbrace^{n(\lambda)}$ is predictable at position $i$  if there exist a polynomial
+time (in $\lambda$) algorithm $A$ such that 
+\begin{eqnarray}
+\text{Pr}_{k \leftarrow \mathcal{K}_\lambda} \left[ A(\lambda, G_\lambda(k)|_{1, \ldots,
+i}) =  G_\lambda(k)|_{i+1} \right] > \frac{1}{2} + \epsilon(\lambda)
+\end{eqnarray}
+for some non-negligible function $\epsilon(\lambda)$
+\end{document}
