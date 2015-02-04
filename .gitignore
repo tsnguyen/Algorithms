@@ -4,3 +4,9 @@
 
 # temporary data files
 *.csv
+
+# binary files
+*.pdf
+
+# temporary text editor files
+*~
