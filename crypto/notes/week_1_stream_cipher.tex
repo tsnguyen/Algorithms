@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{amsmath}
+\usepackage{mathtools}
 
 \begin{document}
 
@@ -123,4 +124,120 @@ time (in $\lambda$) algorithm $A$ such that
 i}) =  G_\lambda(k)|_{i+1} \right] > \frac{1}{2} + \epsilon(\lambda)
 \end{eqnarray}
 for some non-negligible function $\epsilon(\lambda)$
+\section{Attack on OTP and stream cipher}
+
+\subsection{Attack 1: two time pad is insecured}
+Never use stream cipher key more than once! For example, if we use stream cipher
+twice
+\begin{eqnarray}
+  c_1 &\leftarrow& m_1 \oplus \text{PRG}(k)\\
+  c_2 &\leftarrow& m_2 \oplus \text{PRG}(k)
+\end{eqnarray}
+then,
+\begin{eqnarray}
+  c_1 \oplus c_2 &=& m_1 \oplus m_2
+\end{eqnarray}
+And there is enough redundancy in English and ASCII encoding that from $m_1
+\oplus m_2$ we can deduce $m_1$ and $m_2$.
+
+Real world example of this type of attack:
+\begin{itemize}
+\item Project Venona
+\item MS-PPTP (windows NT)
+\item 802.11b WEP
+\item disk encryption
+\end{itemize}
+\subsection{Attack2: no integrity}
+Modifications to ciphertext are undetected and have \emph{predictable} impact on
+plaintext. 
+
+\section{Real-world stream cipher}
+\subsection{RC4 (software)}
+RC4 was used in HTTPS and WEP. The weakness are
+\begin{itemize}
+\item bias in initial output: Probabilty of the second byte is equal to zero is
+  $2/256$ 
+\item Probabilty of $(0,0)$ is $1/256^2 + 1/256^3$
+\item related key attacks
+\end{itemize}
+\subsection{CSS (hardware - badly broken)}
+Scheme: linear feedback shift register (LFSR):
+\begin{itemize}
+\item DVD encryption (CSS): 2 LFSRs
+\item GSM encryption (A5/1,2): 3 LFSRs
+\item Bluetooth (E0): 4 LFSRs
+\end{itemize}
+All are broken.
+
+\subsection{Modern stream cipher: eStream}
+The PRG use a seed of length $s$ concatenated with non-repeating nonce to
+generate random string
+\begin{eqnarray}
+  E(k, m; r) &=& m \oplus \text{PRG}(k; r)
+\end{eqnarray}
+It is essential that the pair $(k, r)$ is never used more than once.
+
+Example of eStream: Salsa 20 (implemented in both software and hardware).
+It is unknown if Salsa 20 is secured or not, but in reality there is no known
+attack better than exhautive search.
+
+\section{PRG security Definition}
+
+Let $G: K \to \lbrace 0, 1\rbrace^n$ be a PRG. Our goal is to define what it
+means that
+\begin{eqnarray}
+  [k \xleftarrow{R} \mathcal{K}, \text{ output } G(k) ]
+\end{eqnarray}
+is ``indistinghuishable'' from
+\begin{eqnarray}
+  [r \xleftarrow{R} \lbrace 0, 1 \rbrace^n, \text{ output } r]
+\end{eqnarray}
+
+Let us first define what is a statistical test.
+\emph{Definition:} a statistical test on $\lbrace 0, 1 \rbrace^n$ is an
+algorithms $A$ such that $A(x)$ output 0 or 1.
+
+\emph{Definition:} let $G: \mathcal{K} \to \lbrace 0,1 \rbrace^n$ be a PRG and
+$A$ is a statistical test on $\lbrace 0, 1\rbrace^n$. We define the advantage of
+the PRG given the statistical test $A$ as
+\begin{eqnarray}
+  \text{Adv}_\text{PRG}[A, G] &=& \left| \text{Pr}_{k \xleftarrow{R}
+      \mathcal{K}} [A(G(k)) = 1] - \text{Pr}_{r \xleftarrow{R} \lbrace 0,
+      1 \rbrace^n }[A(r) = 1] \right|
+\end{eqnarray}
+If the advantage is close to 1, then the statistical test can distinguish $G$
+from a real random number generator. If the advantage is close to zero, then $A$
+cannot distinguish $G$ from a real random number generator.
+
+\emph{Definition:} we say that $G: \mathcal{K} \to \lbrace 0, 1 \rbrace^n$ is a
+secure PRG if for all ``efficient'' statistical test, the advantage of $G$ is
+``negigible''.
+
+Are there provable secure PRG? No, but we have heuristic candidates.
+
+\emph{Theorem (Yao '82):} Let $G: K \to \lbrace 0, 1 \rbrace^n$ be a PRG, if for
+all $i \in \lbrace 0, \dotsc, n-1 \rbrace$ PRG $G$ is unpredictable at position
+$i$ then $G$ is a secure PRG.
+
+In other words, if next-bit predictors cannot distinguish $G$ from random then
+no statistical test can.
+
+In general, we can have define computationally indistinghuishable as follow:
+
+\emph{Definition:} let $P_1$ and $P_2$ be two distributions over $\lbrace 0, 1
+\rbrace^n$. We say that $P_1$ and $P_2$ are computationally indistinghuishable
+(denote $P_1 \approx_p P_2$) if for all efficient statistical test $A$
+\begin{eqnarray}
+   \left| \text{Pr}_{x \leftarrow P_1} [A(x) = 1] - \text{Pr}_{x \leftarrow P_2}
+     [A(x) = 1] \right|
+\end{eqnarray}
+is negigible.
+
+We can say a PRG is secure if it is computationally indistinghuishable from a
+uniform distributions over $\lbrace 0, 1 \rbrace^n$.
+
+\section{Semantic security}
+
+\section{Stream cipher is Semantically secure}
 \end{document}
+ 

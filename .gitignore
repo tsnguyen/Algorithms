@@ -3,6 +3,7 @@
 *.exe
 *.aux
 *.log
+*.dvi
 
 # temporary data files
 *.csv
@@ -12,3 +13,6 @@
 
 # temporary text editor files
 *~
+
+# emacs files
+*.el
