@@ -1,0 +1,135 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+\title{Block Cipher}
+
+\begin{document}
+\maketitle
+
+\section{What is block cipher?}
+Block cipher is the cryto work horse, which encrypt $n$ bits block of PT using
+$k$ bits key to get $n$ bits block of CT. The canonical examples for block
+ciphers are:
+\begin{itemize}
+\item 3DES: $n = 64$, $k = 168$
+\item AES: $n = 128$, $k = 128, 192, 256$
+\end{itemize}
+
+Block cipher is built by iteration: the key $k$ is expanded into $n$ keys using
+key expansion. Then the PT $m$ goes through $n$ rould of round function $R(k_i,
+m)$. For 3DES, the number of round functions is 48, for AES-128 the number of
+round funciton is 10. Because of the iteration, block cipher is generally slower
+than stream cipher.
+
+To study block cipher at the abstract level, let us define pseudo random
+permutaiton and pseudo random function. 
+
+\emph{Definition: } pseudo random function (PRF) is defined over $(\mathcal{K,
+  X, Y})$ :
+\begin{eqnarray}
+  F: \mathcal{K} \times \mathcal{X} \to \mathcal {Y}
+\end{eqnarray}
+such that exist an ``efficien'' algorithm to evaluate $F(k, x)$.
+
+\emph{Definition: } pseudo random permutaiton (PRP) is defined over
+$(\mathcal{K, X})$:
+\begin{eqnarray}
+  E: \mathcal{K} \times \mathcal{X} \to \mathcal{X}
+\end{eqnarray}
+such that
+\begin{enumerate}
+\item exist an ``efficient'' deterministic algorithm to evaluate $e(K,X)$
+\item the function $E(k, \cdot) $ is one to one
+\item exist an ``efficien'' inversion algorithm $D(k, m)$
+\end{enumerate}
+
+Functionally, any PRP is also a PRF: a PRP is a PRF where $\mathcal{X} =
+\mathcal{Y}$ and efficiently invertible.
+
+\subsection{Secure PRFs}
+
+Let $F: \mathcal{K} \times \mathcal{X} \to \mathcal{Y}$ be a PRF. We can define
+two sets of functions:
+\begin{itemize}
+  \item Funs$[\mathcal{X, Y}]$: is the set of all functions from $\mathcal{X}$
+    to $\mathcal{Y}$.
+  \item $S_F$ is the set of function $F(k, \cdot)$ such that $k \in
+    \mathcal{K}$, which is a subset of Funs$[\mathcal{X, Y}]$.
+\end{itemize}
+
+Intuition: a PRF is secure if a random function in Funs$[\mathcal{X,Y}]$ is
+indistinguishable from a random function in $S_F$. What does this mean? Suppose
+an adversary gives us a value $x \in \mathcal{X}$, and then we return with
+either $f(x)$ or $F(k,x)$. $F$ is a secure PRF if the adversary cannot tell if
+the returned value was from $f(x)$ or $F(k, x)$.
+
+\subsection{Secure PRPs (or secure block ciper)}
+
+Let $E: \mathcal{K} \times \mathcal{X} \to \mathcal{Y}$ be a PRP. We can define
+two sets of functions as
+\begin{itemize}
+  \item Perms$[\mathcal{X}]$ is the set of all one to one function fom $X$ to
+    $Y$
+  \item $S_F$ is the set of all function $E(k, \cdot)$ such that $k \in
+    \mathcal{K}$. $S_F$ is a subset of Perms$[\mathcal{X}]$. 
+\end{itemize}
+
+Intuition: a PRP is secure if a random function in Perms$[\mathcal{X}]$ is
+indistinguishable from a random function in $S_F$.
+
+\subsection{An easy application: from PRF to PRG}
+
+Let $F: \mathcal{K} \times \lbrace 0, 1 \rbrace^n \to \lbrace 0, 1 \rbrace^n$ be
+a secure PRF. Then the following $G: \mathcal{K} \to \lbrace 0, 1 \rbrace^{n t}$
+is a secure PRG.
+\begin{eqnarray}
+  G(k) &=& F(k, 0) || F(k,1) || \dotsb || F(k, t-1)
+\end{eqnarray}
+This PRG is secure and parallelizable.
+
+\section{The data encryption standard (DES)}
+
+Lucifer was designed by Horst Feistel in early 1970s, and later  adopted by the
+National Bureau of Standard in  1976 as DES. In 1997, DES was broken by
+exhautive search. In 2000, NIST adopted Rijndael as AES to replace DES.
+
+DES is widely deployed in banking and commerce.
+
+The core idea of DES is the Feistel network: suppose we are given a set of
+arbitrary functions $f_1, \dotsc, f_d: \lbrace 0, 1 \rbrace^n \to \lbrace 0, 1
+\rbrace^n$, we would want to build an invertible function $F: \lbrace 0, 1
+\rbrace^{2 n} \to \lbrace 0, 1 \rbrace^{2n}$. The Feistel network is constructed
+as follow
+\begin{eqnarray}
+  \left\lbrace \begin{array}{ccl}
+      R_i & = & f_i (R_{i-1} ) \oplus L_{i-1}\\
+      L_i & = & R_{i-1}
+    \end{array}\right. 
+\end{eqnarray}
+where $L_i$ and $R_i$ are the first and the second halves of the $2n$ bits at
+layer $i$.
+
+The inverse is constructed as follow
+\begin{eqnarray}
+  \left\lbrace \begin{array}{ccl}
+      R_{i-1} &=& L_i \\
+      L_{i-1} &=& f_i(L_i) \oplus R_i
+    \end{array}\right.
+\end{eqnarray}
+So, the inversion is basically the same, with the functions $f_1, \dotsc, f_d$
+applied in reversed order.
+
+The Feistel network gives a general method for building invertible functions
+(block cipher) from arbitrary functions. This construction is used in many block
+ciphers but not in AES.
+
+\emph{Theorem (Luby - Rackoff '85):} given $f: \mathcal{K} \times \lbrace 0, 1
+\rbrace^n \to \lbrace 0, 1 \rbrace^n$ is a secure PRF, then a 3 round Feistel
+$F: \mathcal{K}^3 \times \lbrace 0, 1 \rbrace^{2 n} \to \lbrace 0, 1
+\rbrace^{2n}$ is a secure PRP. Note that it is essential to have 3 independent
+keys. 
+
+DES is a 16 round Feistel network where $f_i(x) = F(k_i, x) $ with $k_i$
+obtained from the key expansion. 
+\end{document}
