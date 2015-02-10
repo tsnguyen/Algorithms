@@ -1,0 +1,284 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+\title{Message integrity}
+
+\begin{document}
+\maketitle
+
+\section{Message Authorization Code (MAC)}
+
+\subsection{MAC and CRC}
+The goal is to guarantee integrity of the message, with no concern of
+confidentiality. Real world examples are protecting public binaries on disk
+(such as system files on Windows machine can be visible for evrybody, but must
+be protected against corruption from viruses), protecting banner ads on web
+pages (companies don't care if people seeing their ads, but they want to make
+sure nobody change the contents of the ads).
+
+The idea to maintain the message integrity is to use message authorization codes
+(MACs).
+
+\emph{Definition: } MAC $I = (S, V)$ defined over $(\mathcal {K, M, T})$ is a
+pair of algorithms:
+\begin{itemize}
+\item the signinng algorithm $S(k, m)$ outputs tag $t$ in $\mathcal{T}$
+\item the verifying algorithm $V(k, m, t)$ outputs ``yes'' or ``no''.
+\end{itemize}
+
+Similar to encryption, MACs requires a secret key. The codes to protect the
+message against random erros are cyclic redundancy check (CRC) does not require
+a secret key, but it does not protect against malicious erros neither. An
+attacker can easily modify message $m$ and re-compute CRC. 
+
+\subsection{Secure MACs}
+Similar to encryption, we are going to define secure MACs. We will assume for
+now that the attacker's power is to perform chosen message attack. For a set of
+messages $m_1, m_2, \dotsc, m_q$, attacker is given $t_i \leftarrow S(k,
+m_i)$. The attacker's goal is existential forgery: to produce some new valid
+message/tag pair $(m, t)$ such that $(m, t) \notin \left\lbrace (m_1, t_1),
+  (m_2, t_2), \dotsc, (m_q, t_q) \right\rbrace$. The attacker then should not be
+able to produce a valid tag for a new message, and given $(m, t)$ attacker
+should not even produce $(m, t')$ for $t \neq t'$.
+
+To define secure MACs, let us define a MAC game as follow: given a MAC $I = (S,
+V)$ andand adversary $A$. The adversary will give the challenger a set of
+messages $m_1, \dotsc, m_q$, the challenger will then produce the tags $t_1,
+\dotsc, t_q$ for all the messages using the same $k \in \mathcal{K}$. The
+adversary will then try to come up with an $(m, t)$ pair and give it back to the
+challenger. The challenger will then ouput $b = 1$ if $V(k, m, t) = $``yes''
+and $(m, t) \notin \left\lbrace (m_1, t_1), \dotsc, (m_2, t_2) \right\rbrace$,
+and output $b=0$ otherwise. We define $I = (S, V)$ is a secure MAC if for all
+``efficient '' adversary $A$, the advantage of $A$ over $I$, or the probability
+that the challenger outputs 1, is ``negligible''.
+
+\subsection{Example: protecting system files}
+Suppose at install time, the system computes the tags for the set of system
+files using the key $k$ generated from the user's password. Later a virus
+infects the system and modifies system files. The user can then reboot into a
+clean OS and supplies his password. A secure MAC then would be able to detect
+all the modified files. Note that, however, if the virus swap the files, then
+the secure MAC cannot detect this behaviour. To scope with swapping files, the
+MAC can generate the tag using both the file name and the file contents.
+
+\section{MACs based on PRFs}
+
+Now that we know what is a secure MAC, let go ahead and construct our first
+secure MAC. For a given PRF $F: \mathcal{K} \times \mathcal{X} \to \mathcal{Y}$,
+we define a MAC $I_F = (S, V)$ as
+\begin{itemize}
+\item $S(k, m) := F(k,m)$
+\item $V(k, m, t)$: ouputs ``yes'' if $t = F(k, m)$ and ``no'' otherwise.
+\end{itemize}
+
+A bad example using the construction above is to use a secure PRF $F:
+\mathcal{K} \times \mathcal{X} \to \mathcal{Y}$ with $\mathcal{Y} = \lbrace 0, 1
+\rbrace^{10}$. In this case, even though the PRF is secure, the $\mathcal{Y}$
+space is too small. An adversary can just randomly guess the tag $t$ and still
+get the advantage of $1 / 2^{10}$, which is non-negligible.
+
+\emph{Theorem: } If $F : \mathcal{K} \times \mathcal{X} \to \mathcal{Y}$ is a
+secure PRF, and $1 / | \mathcal{Y}|$ is negligible, then $I_F$ is a secure MAC.
+
+In particular, for any efficient MAC adversary $A$ attacking $I_F$, there exists
+an efficient PRF adversary $B$ attacking $F$ such that
+\begin{eqnarray}
+  \text{Adv}_\text{MAC} [ A, I_F] \le \text{Adv}_\text{PRF} [B, F] +
+  \frac{1}{|\mathcal{Y}|} 
+\end{eqnarray}
+Therefore, given that $F$ is a secure PRF, $I_F$ is secure as long as
+$|\mathcal{Y}|$ is large, say $|\mathcal{Y}| = 2^{80}$.
+
+\subsection{Example}
+AES can be used as a MAC for 16 byte messages . The main question is how to
+conver small MAC to big MAC: how to use MAC for longer messages. There are two
+main constructions used in practice:
+\begin{itemize}
+\item CBC-MAC: used in banking -  ANSI X9.9, X9.19, FIPS 186-3
+\item HMAC: used in internet protocols: SSL, IPsec, SSH
+\end{itemize}
+Both of these constructions convert a small PRF ino a big PRF.
+
+\subsection{Truncating MACs based on PRFs}
+\emph{Lemma: } suppose $F: \mathcal{K} \times \mathcal{X} \to \lbrace 0, 1
+\rbrace^n$ is a secure PRF, then so is $F_t(k, m) = F( k, m)[1 \dotsc t]$ for
+all $1 \le t \le n$ (a truncated of a secure PRF is also a secure PRF).
+
+Therefore, if $(S,V)$ is a MAC based on a secure PRF outputing $n$ bits, the
+truncated MAC outputing $w$ bits is secure as long as $1 / 2^w$ is negligible,
+say $w \ge 64$.
+
+\section{CBC-MAC and NMAC}
+
+As we have seen in the previous section, given a secure PRF $F$, we can
+construct a secure MAC 
+\begin{eqnarray}
+  S(k, m) &=& F(k, m)
+\end{eqnarray}
+as long as $|\mathcal{Y}|$ is large. 
+
+Our goal for this section is given a PRF for short message (such as AES),
+construct a PRF for long message. From now on we let $\mathcal{X} = \lbrace 0, 1
+\rbrace^n$ (i.e. n = 128 for AES).
+
+\subsection{Construction 1: encrypted CBS-MAC (or ECBC for short)}
+
+Let $F: \mathcal{K} \times \mathcal{X} \to \mathcal{X}$ be a PRP. Define a new
+PRF $F_\text{ECBC}: \mathcal{K}^2 \times \mathcal{X}^{\le L} \to \mathcal{X}$ as
+follow: first devide the message into blocks $m_1, m_2, \dotsc$ and then compute
+iteratively 
+\begin{eqnarray}
+  t_1 &=& F(k, m_0) \\
+  t_i &=& F(k, m_i \oplus t_{i-1}) \quad 1 < i \le l \\
+  t &=& F(k_1, t_l)
+\end{eqnarray}
+which will generate the tag that has the same length as the message block.
+
+With this construction, the message can have any length as long as it is less
+than the maximum length $L$. Note that the final encryption with $k_1$ is
+important: without the final encryption, the construction is called raw CBC and
+is not secure.
+
+\subsection{Construction 2: NMAC (nested MAC)}
+
+Let $F: \mathcal{K} \times \mathcal{X} \to \mathcal{K}$ be a PRF, define a new
+PRF $F_\text{NMAC}: \mathcal{K}^2 \times \mathcal{X}^{\le L} \to K$ such that:
+devide the message into blocks of $n$ bits, then computes
+\begin{eqnarray}
+  t_0 &=& F(k, m_0) \\
+  t_i &=& F(t_{i-1}, m_i) \quad 1 < i \le l\\
+  t &=& F(k_1, t_l || \text{fpad})
+\end{eqnarray}
+which generates the tag that has the same length as the key.
+
+Similar to the ECBC, in the NMAC construction we also devide the message into
+blocks. Then the encryption goes through each block iteratively, computing new
+key in each round, which will be used in the next. After going through all the
+blocks of the message, the last key is paded with a fixed pad and encrypted one
+more time with $k_1$ to get the final key. Without the final encryption using
+$k_1$, the construction is called the cascade, and is not secure.
+
+\subsection{Why the final encryption  using a different key is important for
+  both NMAC and ECBC?}
+
+Why the cascade is insecure? Because if we have cascade$(k, m)$ then we can
+easily use $F$ to compute cascade$(k, m||w)$ for any $w$.
+
+For ECBC, the proof is a bit more complicated. Suppose we define MAC as
+$I_\text{raw} = (S,V)$ such that
+\begin{eqnarray}
+  S(k, m) &=& \text{rawCBC}(k, m)
+\end{eqnarray}
+then $I_\text{raw}$ is easily broken using a 1-chosen message attack. The
+asversary works as foolows:
+\begin{itemize}
+\item choose an arbitrary one block message $m \in \mathcal{X}$
+\item request the tag for $m$ and get $t = F(k, m)$
+\item output $t$ as MAC forgery for the two block message $(m , t \oplus m)$
+\end{itemize}
+Indeed
+\begin{eqnarray}
+  \text{rawCBC} (k, (m, t \oplus m)) &=& F(k, F(k, m) \oplus (t \oplus m)) \\
+  &=& F(k, t \oplus (t \oplus m)) \\
+  &=& t
+\end{eqnarray}
+
+\subsection{ECBC-MAC and NMAC analysis}
+\emph{Theorem: } for any $L > 0$, for every efficient $q$-query PRF adversary
+$A$ attacking $F_\text{ECBC}$ or $F_{NMAC}$ there exist an efficient adversary
+$B$ such that
+\begin{eqnarray}
+  \text{Adv}_\text{PRF}[A, F_\text{ECBC}] &\le& \text{Adv}_\text{PRP}[B, F] + 2
+  \frac{q^2}{|\mathcal{X}|}\\
+  \text{Adv}_\text{PRF}[A, F_\text{NMAC}] &\le& q L \text{Adv}_\text{PRF}[B, F]
+  + \frac{q^2}{2 |\mathcal{X}|}
+\end{eqnarray}
+
+The bottom lines are
+\begin{itemize}
+\item CBC-MAC is secure as long as $q \ll |\mathcal{X}|^{1/2}$
+\item NMAC is secure as long as $q \ll |\mathcal{K}|^{1/2}$
+\end{itemize}
+
+For example, suppose we want the advantag $\text{Adv}_\text{PRF}[A, F_{ECBC} \le
+1/2^{32}$ then $q^2 / |\mathcal{X} \le 1 / 2^{32}$,
+\begin{itemize}
+\item for AES, $|\mathcal{X}| = 2^{128}$, then $q < 2^{48}$. So, after $2^{48}$
+  messages we must change key.
+\item for 3DES, $|\mathcal{X}| = 2^{64}$, then $q < 2^{16}$.
+\end{itemize}
+
+The security boundaries are tight. Similar to the birthday paradox, after
+signing $|\mathcal{X}|^{1/2}$ messages with ECBC-MAC or $|\mathcal{K}|^{1/2}$
+messages with NMAC, the probability of running into the same message/key is
+significant, and the MACs becomes insecure because of the extension property.
+
+Suppose the underlying PRF $F$ is a PRP (for example AES) then both PRFs (ECBC
+and NMAC) have the following extension property:
+\begin{eqnarray}
+  \forall x, y, w: F_\text{BIG} (k, x) = F_\text{BIG} (k, y) &\Rightarrow&
+  F_\text{BIG}(k, x||w) = F_\text{BIG}(k, y || w) \label{extension}
+\end{eqnarray}
+
+Let $F_\text{BIG}: \mathcal{K} \times \mathcal{X} \to \mathcal{Y}$ be a PRF that
+has the extension property \eqref{extension}, an adversary can design a generic
+attack on the derived MAC as follows:
+\begin{enumerate}
+  \item issue $|\mathcal{Y}|^{1/2}$ message queries for random messages in
+    $\mathcal{X}$ and obtain all the pairs $(m_i, t_i)$ for $i = 1, \dotsc,
+    |\mathcal{Y}|^{1/2}$.
+  \item find a collision $t_u = t_v$ for $u \neq v$, which exists with high
+    probability by the birthday paradox.
+  \item chose some $w$ and query for $t = F_\text{BIG}(k, m_u || w)$
+  \item output forgery $(m_v || w, t)$. Indeed $t = F_\text{BIG}(k, m_v || w)$.
+\end{enumerate}
+
+For better security, we can use random construction.
+
+\subsection{Comparison}
+ECBC-MAC is commonly used as an AES-based MAC
+\begin{itemize}
+\item CCM encryption mode (used in 802.11i)
+\item NIST standard called CMAC
+\end{itemize}
+
+NMAC is not usually used with AES or 3DES because of the main reasion is the
+need to change AES key on every block, and AES was not designed to perform well
+when the key is changed on every block: it requires re-computing AES key
+expansion. But NMAC is the basis for a popular MAC called HMAC.
+
+\section{MAC padding}
+In ECBC-MAC, we iteratively go through blocks of message to get to the final
+tag. The number of blocks can be arbitrary as long as it is less than a maximum
+value $L$. But what if the message length is not a multiple of block size? We
+will have to pad the message with some binary string to complete the block, but
+what string should we pad? Can we just pad $m$ with 0's? This is a bad idea
+because given the tag for $m$ the attacker can obtain the tag for $m||0$ (which
+is the same as the tag for $m$).
+
+For security, the padding must be invertible, if $m_0 \neq m_1$ then pad($m_0$)
+must be different from pad($m_1$): there should be no ambiguity.
+
+ISO: pad with ``$100 \ldots 00$'' and add dummy block if needed. The dummy block
+is important for the messages with length exactly multiple of block
+size. For example, the first message $m_1$ needs 3 additional bits, and would be
+padded as $m_1||100$ before computing the tage $t_1$. Now if the message $m_2 =
+m_1||100$ does not have the dummy block padded at the end, its tage $t_2$ will
+be identical to $t_1$.
+
+CMAC (NIST standard): a variation of CBC-MAC where key = $(k, k_1, k_2)$. Up to
+the last block, the encryption is identical to CBC. At the last block, if the
+message does not complete the block, pad it with $100 \ldots 00$ and xor with
+$k_1$ before complete the last step of CBC. If the message complete the last
+block, then use $k_2$.
+\begin{itemize}
+\item no final encryption step (extension attack thwarted by last key xor)
+\item no dummy block (ambiguity resolved by used of $k_1$ or $k_2$)
+\end{itemize}
+
+\section{PMAC and Carter-Wegman MAC}
+So far we have seen ECBC-MAC and NMAC, but both of them are sequential. The next
+natural question is can we build a parallel MAC from a small PRF?
+
+\end{document}
